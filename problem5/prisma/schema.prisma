@@ -1,0 +1,33 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "darwin", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PRIORITY {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id          Int       @id @default(autoincrement()) @map("id")
+  slug        String    @unique
+  title       String    @map("title")
+  description String?   @map("description")
+  completed   Boolean   @default(false) @map("completed")
+  priority    PRIORITY  @default(MEDIUM) @map("priority")
+  dueDate     DateTime? @map("due_date")
+  tags        String[]  @map("tags")
+  createdAt   DateTime? @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  @@index([slug])
+  @@map("tasks")
+}

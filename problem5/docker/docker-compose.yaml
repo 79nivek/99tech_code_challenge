@@ -1,0 +1,71 @@
+name: 99tech-problem5
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d 99tech"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: 99tech
+
+    ports:
+      - 5432:5432
+    networks:
+      - 99tech-network
+    volumes:
+      - 99tech_postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: dev
+    networks:
+      - 99tech-network
+    ports:
+      - 3000:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/99tech
+      ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0
+    volumes:
+      - ../src:/app/src
+  migration:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: prisma
+    restart: no
+    command:
+      - pnpm
+      - run
+      - prisma:migrate
+    networks:
+      - 99tech-network
+    volumes:
+      - ../src:/app/src
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/99tech
+      ENV: development
+      PORT: 3000
+      HOST: 0.0.0.0
+
+volumes:
+  99tech_postgres_data:
+
+networks:
+  99tech-network:
+    driver: bridge
